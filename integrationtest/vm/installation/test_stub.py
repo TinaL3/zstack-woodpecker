@@ -134,6 +134,17 @@ def prepare_test_env(vm_inv, aio_target):
     ssh.make_ssh_no_password(vm_ip, test_lib.lib_get_vm_username(vm_inv), \
             test_lib.lib_get_vm_password(vm_inv))
 
+def prepare_upgrade_test_env(vm_inv, aio_target, upgrade_pkg):
+    zstack_install_script = os.environ['zstackInstallScript']
+    target_file = '/root/zstack_installer.sh'
+    test_lib.lib_scp_file_to_vm(vm_inv, zstack_install_script, target_file)
+
+    test_lib.lib_scp_file_to_vm(vm_inv, upgrade_pkg, aio_target)
+
+    vm_ip = vm_inv.vmNics[0].ip
+    ssh.make_ssh_no_password(vm_ip, test_lib.lib_get_vm_username(vm_inv), \
+            test_lib.lib_get_vm_password(vm_inv))
+
 def upgrade_zstack(ssh_cmd, target_file, tmp_file):
     env_var = "WEBSITE='%s'" % 'localhost'
 
