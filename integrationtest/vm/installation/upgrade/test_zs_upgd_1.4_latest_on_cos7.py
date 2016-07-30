@@ -30,7 +30,7 @@ def test():
     vm_ip = vm_inv.vmNics[0].ip
     test_util.test_dsc('Install zstack 1.4')
     target_file = '/root/zstack-all-in-one.tgz'
-    install_pkg = os.environ.get('zstackPkg_1.4') 
+    install_pkg = os.environ.get('zstackPkg_1.4')
     test_stub.prepare_upgrade_test_env(vm_inv, target_file, install_pkg) 
 
     ssh_cmd = 'ssh  -oStrictHostKeyChecking=no -oCheckHostIP=no -oUserKnownHostsFile=/dev/null %s' % vm_ip
