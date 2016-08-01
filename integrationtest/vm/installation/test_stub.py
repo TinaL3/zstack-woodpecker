@@ -154,6 +154,16 @@ def prepare_upgrade_test_env(vm_inv, aio_target, upgrade_pkg):
 
     ssh.make_ssh_no_password(vm_ip, vm_username, vm_password)
 
+def prepare_yum_repo(vm_inv):
+    origin_file = '/etc/yum.repos.d/epel.repo'
+    target_file = '/etc/yum.repos.d/epel.repo'
+    vm_ip = vm_inv.vmNics[0].ip
+    vm_username = test_lib.lib_get_vm_username(vm_inv)
+    vm_password = test_lib.lib_get_vm_password(vm_inv)
+    scp_file_to_vm(vm_inv, origin_file, target_file)
+
+    ssh.make_ssh_no_password(vm_ip, vm_username, vm_password)
+
 def upgrade_zstack(ssh_cmd, target_file, tmp_file):
     env_var = "WEBSITE='%s'" % 'localhost'
 
