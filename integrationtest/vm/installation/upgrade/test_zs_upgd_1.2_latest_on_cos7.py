@@ -28,9 +28,9 @@ def test():
 
     vm_inv = vm.get_vm()
     vm_ip = vm_inv.vmNics[0].ip
-    test_util.test_dsc('Install zstack 1.3')
+    test_util.test_dsc('Install zstack 1.2')
     target_file = '/root/zstack-all-in-one.tgz'
-    install_pkg = os.environ.get('zstackPkg_1.3')
+    install_pkg = os.environ.get('zstackPkg_1.2')
     test_stub.prepare_upgrade_test_env(vm_inv, target_file, install_pkg) 
 
     test_util.test_dsc('Prepare yum file')
