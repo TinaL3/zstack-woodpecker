@@ -306,26 +306,39 @@ def check_installation(ssh_cmd, tmp_file, vm_inv):
 # add check item
     cmd = '%s "/usr/bin/zstack-ctl status" | grep \'^MN status\' | awk \'{print $3}\'' % ssh_cmd
     (process_result, mn_status) = execute_shell_in_process_stdout(cmd, tmp_file)
-#    test_util.test_dsc('MN status: %s' % mn_status)
     if process_result != 0:
         test_util.test_fail('zstack-ctl get MN status failed')
-#    if not mn_status == 'Running':
     if not 'Running' in mn_status:
-        test_util.test_dsc('management node is not running')
-#        test_util.test_fail('management node is not running')
+        test_util.test_dsc('management node is not running, try to start management node')
+        cmd = '%s "/usr/bin/zstack-ctl start_node"' % ssh_cmd
+        process_result = process_result = execute_shell_in_process(cmd, tmp_file)
+        if process_result != 0:
+            test_util.test_fail('zstack-ctl start_node failed')
+        time.sleep(5)
+        cmd = '%s "/usr/bin/zstack-ctl status" | grep \'^MN status\' | awk \'{print $3}\'' % ssh_cmd
+        (process_result, mn_status) = execute_shell_in_process_stdout(cmd, tmp_file)
+        if process_result != 0:
+            test_util.test_fail('zstack-ctl get MN status failed')
+        if not 'Running' in mn_status:
+            test_util.test_fail('management node is not running, start management node failed')
+    test_util.test_dsc('check MN, MN is running')
 
     cmd = '%s "/usr/bin/zstack-ctl status" | grep \'^UI status\' | awk \'{print $3}\'' % ssh_cmd
     (process_result, ui_status) = execute_shell_in_process_stdout(cmd, tmp_file)
-#    test_util.test_dsc('ui status: %s' % ui_status)
     if process_result != 0:
         test_util.test_fail('zstack-ctl get UI status failed')
-#    if not ui_status == 'Running':
     if not 'Running' in ui_status:
-        test_util.test_dsc('UI is not running')
-#        test_util.test_fail('UI is not running')
+        test_util.test_dsc('UI is not running, try to start UI')
+        cmd = '%s "/usr/bin/zstack-ctl start_ui"' % ssh_cmd
+        process_result = process_result = execute_shell_in_process(cmd, tmp_file)
+        if process_result != 0:
+            test_util.test_fail('zstack-ctl start_ui failed')
+        time.sleep(5)
+        cmd = '%s "/usr/bin/zstack-ctl status" | grep \'^MN status\' | awk \'{print $3}\'' % ssh_cmd
+        (process_result, mn_status) = execute_shell_in_process_stdout(cmd, tmp_file)
+        if process_result != 0:
+            test_util.test_fail('zstack-ctl get MN status failed')
+        if not 'Running' in mn_status:
+            test_util.test_fail('UI is not running, start UI failed')
+    test_util.test_dsc('check UI, UI is running')
 
-    cmd = '%s "/usr/bin/zstack-ctl status" | grep ^version | awk \'{print $2}\'' % ssh_cmd
-    (process_result, version) = execute_shell_in_process_stdout(cmd, tmp_file)
-    if process_result != 0:
-        test_util.test_fail('zstack-ctl get version failed')
-    test_util.test_dsc("current version: %s" % version)
