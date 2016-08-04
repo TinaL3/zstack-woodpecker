@@ -342,6 +342,71 @@ def check_installation(ssh_cmd, tmp_file, vm_inv):
             test_util.test_fail('UI is not running, start UI failed')
     test_util.test_dsc('check UI, UI is running')
 
+    cmd = '%s "/usr/bin/zstack-ctl status" | grep ^ZSTACK_HOME | awk \'{print $2}\'' % ssh_cmd
+    (process_result, zstack_home) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-ctl status get ZSTACK_HOME failed')
+    zstack_home = zstack_home[:-1]
+    cmd = '%s "[ -d " %s " ] && echo yes || echo no" ' % (ssh_cmd, zstack_home)
+    (process_result, dir_exist) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('check ZSTACK_HOME failed')
+    dir_exist = dir_exist[:-1]
+    if dir_exist == 'no':
+        test_util.test_fail('there is no ZSTACK_HOME')
+
+    cmd = '%s "/usr/bin/zstack-ctl status" | grep ^zstack.properties | awk \'{print $2}\'' % ssh_cmd
+    (process_result, properties_file) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-ctl status get zstack.properties failed')
+    properties_file = properties_file[:-1]
+    cmd = '%s "[ -f " %s " ] && echo yes || echo no" ' % (ssh_cmd, properties_file)
+    (process_result, file_exist) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('check zstack.properties failed')
+    file_exist = file_exist[:-1]
+    if file_exist == 'no':
+        test_util.test_fail('there is no zstack.properties')
+
+    cmd = '%s "/usr/bin/zstack-ctl status" | grep ^log4j2.xml | awk \'{print $2}\'' % ssh_cmd
+    (process_result, properties_file) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-ctl status get log4j2.xml failed')
+    properties_file = properties_file[:-1]
+    cmd = '%s "[ -f " %s " ] && echo yes || echo no" ' % (ssh_cmd, properties_file)
+    (process_result, file_exist) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('check log4j2.xml failed')
+    file_exist = file_exist[:-1]
+    if file_exist == 'no':
+        test_util.test_fail('there is no log4j2.xml')
+
+    cmd = '%s "/usr/bin/zstack-ctl status" | grep ^\'PID file\' | awk \'{print $3}\'' % ssh_cmd
+    (process_result, properties_file) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-ctl status get PID file failed')
+    properties_file = properties_file[:-1]
+    cmd = '%s "[ -f " %s " ] && echo yes || echo no" ' % (ssh_cmd, properties_file)
+    (process_result, file_exist) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('check PID file failed')
+    file_exist = file_exist[:-1]
+    if file_exist == 'no':
+        test_util.test_fail('there is no PID file')
+
+    cmd = '%s "/usr/bin/zstack-ctl status" | grep ^\'log file\' | awk \'{print $3}\'' % ssh_cmd
+    (process_result, properties_file) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-ctl status get log file failed')
+    properties_file = properties_file[:-1]
+    cmd = '%s "[ -f " %s " ] && echo yes || echo no" ' % (ssh_cmd, properties_file)
+    (process_result, file_exist) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('check log file failed')
+    file_exist = file_exist[:-1]
+    if file_exist == 'no':
+        test_util.test_fail('there is no log file')
+
 def check_zstack_version(ssh_cmd, tmp_file, vm_inv, pkg_version):
     cmd = '%s "/usr/bin/zstack-ctl status" | grep ^version | awk \'{print $2}\'' % ssh_cmd
     (process_result, version) = execute_shell_in_process_stdout(cmd, tmp_file)
