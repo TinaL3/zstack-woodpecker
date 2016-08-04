@@ -303,6 +303,26 @@ def check_installation(ssh_cmd, tmp_file, vm_inv):
     if process_result != 0:
         test_util.test_fail('zstack-cli Delete Backup Storage failed')
 
+# check zone
+    cmd = '%s "/usr/bin/zstack-cli CreateZone name=ZONE1"' % ssh_cmd
+    process_result = execute_shell_in_process(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Create Zone failed')
+
+    cmd = '%s "/usr/bin/zstack-cli QueryZone name=ZONE1"' % ssh_cmd
+    process_result = execute_shell_in_process(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Query Zone failed')
+    cmd = '%s "/usr/bin/zstack-cli QueryZone name=ZONE1 fields=uuid" | grep uuid | awk \'{print $2}\'' % ssh_cmd
+    (process_result, zone_uuid) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Query Zone failed')
+
+    cmd = '%s "/usr/bin/zstack-cli DeleteZone uuid=%s"' % (ssh_cmd, zone_uuid.split('"')[1])
+    process_result = execute_shell_in_process(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Delete Zone failed')
+
 # add check item
     cmd = '%s "/usr/bin/zstack-ctl status" | grep \'^MN status\' | awk \'{print $3}\'' % ssh_cmd
     (process_result, mn_status) = execute_shell_in_process_stdout(cmd, tmp_file)
