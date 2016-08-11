@@ -436,3 +436,144 @@ def check_zstack_version(ssh_cmd, tmp_file, vm_inv, pkg_version):
     test_util.test_dsc("current version: %s" % version)
     if version != pkg_version:
         test_util.test_fail('try to install zstack-%s, but current version is zstack-%s' % (pkg_version, version))
+
+def create_nest_vm(ssh_cmd, tmp_file, vm_inv, base_ip):
+    cmd = '%s "/usr/bin/zstack-cli LogInByAccount accountName=admin password=password"' % ssh_cmd
+    process_result = execute_shell_in_process(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli login failed')
+
+    cmd = '%s "/usr/bin/zstack-cli CreateZone name=ZONE1 " | grep uuid | awk \'{print $2}\'' % ssh_cmd
+    (process_result, zone_uuid) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Create Zone failed')
+
+    cmd = '%s "/usr/bin/zstack-cli CreateCluster name=CLUSTER1 hypervisorType=KVM zoneUuid=%s " | grep uuid | awk \'{print $2}\'' % (ssh_cmd, zone_uuid)
+    (process_result, cluster_uuid) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Create Cluster failed')
+
+    cmd = '%s ifconfig | grep inet |awk \'NR==1{print $2}\'' % ssh_cmd
+    (process_result, host_ip) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('Get host IP  failed')
+
+    cmd = '%s "/usr/bin/zstack-cli AddKVMHost name=HOST1 managementIp=%s username=root password=password clusterUuid=%s" | grep uuid | awk \'{print $2}\'' % (ssh_cmd, host_ip, cluster_uuid)
+    (process_result, host_uuid) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Host failed')
+
+    ps_url = '%s:/usr/local/zstack/nfs_root' % host_ip
+    cmd = '%s "/usr/bin/zstack-cli AddNfsPrimaryStorage name=PRIMARY-STORAGE1 url=%s zoneUuid=%s " | grep uuid | awk \'{print $2}\'' % (ssh_cmd, ps_url, zone_uuid)
+    (process_result, ps_uuid) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Create Primary Storage failed')
+
+    cmd = '%s "/usr/bin/zstack-cli AttachPrimaryStorageToCluster primaryStorageUuid=%s clusterUuid=%s " ' % (ssh_cmd, ps_uuid, cluster_uuid)
+    process_result = execute_shell_in_process(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Attach Primary Storage to Cluster failed')
+
+    cmd = '%s "/usr/bin/zstack-cli AddSftpBackupStorage name=BACKUP-STORAGE1 hostname=%s username=root password=password url=/home/sftpBackupStorage" | grep uuid | awk \'{print $2}\'' % (ssh_cmd, host_ip)
+    (process_result, bs_uuid) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Create Backup Storage failed')
+
+    cmd = '%s "/usr/bin/zstack-cli AttachBackupStorageToZone backupStorageUuid=%s zoneUuid=%s " | grep uuid | awk \'{print $2}\'' % (ssh_cmd, bs_uuid, zone_uuid)
+    process_result = execute_shell_in_process(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Attach Backup Storage to Zone failed')
+
+# image url
+# get base_ip from para
+    image_url = 'root@%s:/home/%s/sanitytest/zstack-offline-installer-test.bin' % (base_ip, base_ip)
+    cmd = '%s "/usr/bin/zstack-cli AddImage name=zs-sample-image format=raw mediaType=RootVolumeTemplate platform=Linux url=%s backupStorageUuids=%s" | grep uuid | awk \'{print $2}\'' % (ssh_cmd, image_url, bs_uuid)
+    (process_result, image_uuid) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Add Image failed')
+
+    cmd = '%s "/usr/bin/zstack-cli CreateL2NoVlanNetwork name=FLAT-L2 physicalInterface=eth0 zoneUuid=%s" | grep uuid | awk \'{print $2}\'' % (ssh_cmd, zone_uuid)
+    (process_result, l2_uuid) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Create L2 No Vlan Network failed')
+
+    cmd = '%s "/usr/bin/zstack-cli AttachL2NetworkToCluster l2NetworkUuid=%s clusterUuid=%s " | grep uuid | awk \'{print $2}\'' % (ssh_cmd, l2_uuid, cluster_uuid)
+    process_result = execute_shell_in_process(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Attach L2Network to Cluster failed')
+
+    cmd = '%s "/usr/bin/zstack-cli CreateL3Network name=FLAT-L3 l2NetworkUuid=%s dnsDomain=tutorials.zstack.org" | grep uuid | awk \'{print $2}\'' % (ssh_cmd, l2_uuid)
+    (process_result, ls_uuid) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Create L3 Network failed')
+
+# change IP, to do
+    cmd = '%s "/usr/bin/zstack-cli AddIpRange name=FLAT-IP-RANGE l3NetworkUuid=%s startIp=10.0.101.100 endIp=10.0.101.150 netmask=255.255.255.0 gateway=10.0.101.1" | grep uuid | awk \'{print $2}\'' % ssh_cmd
+    process_result = execute_shell_in_process(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Add IP Range failed')
+
+    cmd = '%s "/usr/bin/zstack-cli AddDnsToL3Network l3NetworkUuid=%s dns=8.8.8.8" | grep uuid | awk \'{print $2}\'' % (ssh_cmd, l3_uuid)
+    process_result = execute_shell_in_process(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Add DNS to L3 Network failed')
+
+    cmd = '%s "/usr/bin/zstack-cli QueryNetworkServiceProvider" | grep uuid | awk \'END {print $2}\'' % ssh_cmd
+    (process_result, service_uuid) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Query Network Service Provider failed')
+
+    networkServices = '{%s:[\'DHCP\',\'DNS\']}' % service_uuid
+    cmd = '%s "/usr/bin/zstack-cli AttachNetworkServiceToL3Network networkServices=%s l3NetworkUuid=%s" | grep uuid | awk \'{print $2}\'' % (ssh_cmd, networkServices, l3_uuid)
+    process_result = execute_shell_in_process(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Attach Network Service to L3Network failed')
+
+    cmd = '%s "/usr/bin/zstack-cli CreateInstanceOffering name=small-instance cpuNum=1 cpuSpeed=512 memorySize=134217728" | grep uuid | awk \'{print $2}\'' % ssh_cmd
+    (process_result, int_off_uuid) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Create Instance Offering failed')
+
+    cmd = '%s "/usr/bin/zstack-cli CreateVirtualRouterOffering name=VR-OFFERING cpuNum=1 cpuSpeed=512 memorySize=536870912 imageUuid=%s managementNetworkUuid=%s publicNetworkUuid=%s isDefault=True zoneUuid=%s" | grep uuid | awk \'{print $2}\'' % (ssh_cmd, image_uuid, l3_uuid, l3_uuid,zone_uuid)
+    (process_result, vr_uuid) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Create Virtual Router Offering failed')
+
+    cmd = '%s "/usr/bin/zstack-cli CreateVmInstance name=VM1 instanceOfferingUuid=%s imageUuid=%s l3NetworkUuids=%s systemTags=hostname::vm1" | grep uuid | awk \'{print $2}\'' % (ssh_cmd, int_off_uuid, image_uuid, l3_uuid)
+    (process_result, ) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Create VM failed')
+
+def create_start_vm_scheduler(ssh_cmd, tmp_file, vm_inv, start_date):
+    cmd = '%s "/usr/bin/zstack-cli LogInByAccount accountName=admin password=password"' % ssh_cmd
+    process_result = execute_shell_in_process(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli login failed')
+
+    cmd = '%s "/usr/bin/zstack-cli QueryVmInstance name=VM1 fields=uuid" | grep uuid | awk \'{print $2}\'' % ssh_cmd
+    (process_result, vm_uuid) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Query VM failed')
+    
+    cmd = '%s "/usr/bin/zstack-cli StartVmInstanceScheduler vmUuid=%s interval=120 schedulerName=simple_start_vm_scheduler type=simple startTimeStamp=%s"' % (ssh_cmd, vm_uuid, start_date)
+    process_result = execute_shell_in_process(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Start VM Scheduler failed')
+
+def create_stop_vm_scheduler(ssh_cmd, tmp_file, vm_inv, start_date):
+    cmd = '%s "/usr/bin/zstack-cli LogInByAccount accountName=admin password=password"' % ssh_cmd
+    process_result = execute_shell_in_process(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli login failed')
+
+    cmd = '%s "/usr/bin/zstack-cli QueryVmInstance name=VM1 fields=uuid" | grep uuid | awk \'{print $2}\'' % ssh_cmd
+    (process_result, vm_uuid) = execute_shell_in_process_stdout(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Query VM failed')
+
+    cmd = '%s "/usr/bin/zstack-cli StopVmInstanceScheduler vmUuid=%s interval=120 schedulerName=simple_stop_vm_scheduler type=simple startTimeStamp=%s"' % (ssh_cmd, vm_uuid, start_date)
+    process_result = execute_shell_in_process(cmd, tmp_file)
+    if process_result != 0:
+        test_util.test_fail('zstack-cli Stop VM Scheduler failed') 
+
+
