@@ -8,5 +8,10 @@
         <case timeout="2400" >test_m_nodes_inst_on_ub14.py</case>
         <case timeout="2400" >test_inst_remote_rabbitmq_on_cos7.py</case>
         <case timeout="2400" >test_inst_remote_rabbitmq_on_ub14.py</case>
+	<case timeout="2400" >test_zs_upgd_1.3_latest_on_cos7.py</case>
+	<case timeout="2400" >test_zs_upgd_1.2_latest_on_cos7.py</case>
+	<case timeout="2400" >test_zs_upgd_1.4_latest_on_cos7.py</case>
+        <case timeout="2400" >test_zs_upgd_cnt_1.2_latest_on_cos7.py</case>
+	<case timeout="2400" >test_zs_degd_latest_1.4_on_cos7.py</case>
     </suite>
 </integrationTest>
